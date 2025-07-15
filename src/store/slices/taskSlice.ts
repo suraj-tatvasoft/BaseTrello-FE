@@ -151,21 +151,23 @@ export const updateTask = createAsyncThunk(
       const statuses = state.status.statusList;
       const statusList = statuses.find((status) => status._id === data.status_list_id && status.name.toLowerCase().includes('complete'));
       const statusFinal = !!statusList;
-      if (statusFinal) {
-        await dispatch(
-          updateTaskStatusOnly({
-            taskId: data.taskId,
-            status: TaskStatus.COMPLETED,
-          })
+      let newStatus: TaskStatus;
+      if (data.status_list_id) {
+        const state = getState() as RootState;
+        const statuses = state.status.statusList;
+        const statusList = statuses.find(
+          (status) => status._id === data.status_list_id && status.name.toLowerCase().includes('complete')
         );
+        newStatus = statusList ? TaskStatus.COMPLETED : TaskStatus.INCOMPLETE;
       } else {
-        await dispatch(
-          updateTaskStatusOnly({
-            taskId: data.taskId,
-            status: TaskStatus.INCOMPLETE,
-          })
-        );
+        newStatus = (data.status as TaskStatus) ?? TaskStatus.INCOMPLETE;
       }
+      await dispatch(
+        updateTaskStatusOnly({
+          taskId: data.taskId,
+          status: newStatus,
+        })
+      );
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message ?? 'Error while updating task.');
